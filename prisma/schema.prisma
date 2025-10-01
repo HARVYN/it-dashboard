@@ -1,0 +1,153 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Modelo de usuarios para autenticación
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Modelo para técnicos de mesa de ayuda
+model Technician {
+  id                String              @id @default(cuid())
+  name              String              @unique
+  email             String?
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  helpdeskCases     HelpdeskCase[]
+}
+
+// Modelo para servidores
+model Server {
+  id                String              @id @default(cuid())
+  name              String              @unique
+  description       String?
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  securityControls  ServerSecurity[]
+}
+
+// Modelo para controles de seguridad
+model SecurityControl {
+  id                String              @id @default(cuid())
+  name              String              @unique
+  description       String?
+  category          String
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  serverSecurity    ServerSecurity[]
+}
+
+// Datos mensuales de casos de mesa de ayuda
+model HelpdeskCase {
+  id                    String      @id @default(cuid())
+  year                  Int
+  month                 Int
+  technicianId          String
+  totalCases            Int         @default(0)
+  casesGLPI             Int         @default(0)
+  casesOtherSources     Int         @default(0)
+  satisfactionAverage   Float       @default(0)
+  timeLessThan4h        Int         @default(0)
+  time4to8h             Int         @default(0)
+  time8to16h            Int         @default(0)
+  timeMoreThan16h       Int         @default(0)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  
+  technician            Technician  @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  
+  @@unique([year, month, technicianId])
+}
+
+// Datos mensuales de protección de endpoints
+model EndpointProtection {
+  id                        String    @id @default(cuid())
+  year                      Int
+  month                     Int
+  computersNoIssues         Int       @default(0)
+  computersWarning          Int       @default(0)
+  computersCritical         Int       @default(0)
+  mobileDevicesProtected    Int       @default(0)
+  mobileDevicesPending      Int       @default(0)
+  globalProtectionPercent   Float     @default(0)
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+  
+  @@unique([year, month])
+}
+
+// Datos mensuales de seguridad por servidor
+model ServerSecurity {
+  id                String          @id @default(cuid())
+  year              Int
+  month             Int
+  serverId          String
+  controlId         String
+  status            String          // "compliant", "warning", "critical"
+  compliancePercent Float           @default(0)
+  notes             String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  server            Server          @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  control           SecurityControl @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  
+  @@unique([year, month, serverId, controlId])
+}
+
+// Datos mensuales de ciberseguridad
+model CyberSecurity {
+  id                        String    @id @default(cuid())
+  year                      Int
+  month                     Int
+  attacksFirewall           Int       @default(0)
+  attacksAntivirus          Int       @default(0)
+  attacksMicrosoft365       Int       @default(0)
+  attacksMEDRSOC            Int       @default(0)
+  blockedFirewall           Int       @default(0)
+  blockedAntivirus          Int       @default(0)
+  blockedMicrosoft365       Int       @default(0)
+  blockedMEDRSOC            Int       @default(0)
+  firewallBlockPercent      Float     @default(0)
+  antivirusBlockPercent     Float     @default(0)
+  microsoft365BlockPercent Float     @default(0)
+  medrSocBlockPercent       Float     @default(0)
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+  
+  @@unique([year, month])
+}
+
+// Datos mensuales de incidentes de tecnología
+model TechIncident {
+  id                    String    @id @default(cuid())
+  year                  Int
+  month                 Int
+  unavailabilityHours   Float     @default(0)
+  availableHoursLeft    Float     @default(0)
+  slaCompliance         Float     @default(0)
+  annualProjection      Float     @default(0)
+  description           String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  @@unique([year, month])
+}
